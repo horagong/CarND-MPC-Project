@@ -3,7 +3,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 ## The Model
-This Medel uses six states.
+This Model uses six states.
 ```
 x: directional position
 y: left position
@@ -17,7 +17,7 @@ These states are changed by steering angle and throttle.
 delta: steering angle
 a: throttle
 ```
-So It has following update equations.
+So it has the following update equations.
 ```
 x1 = x0 + v0 * cos(psi0) * dt
 y1 = y0 + v0 * sin(psi0) * dt
@@ -30,10 +30,10 @@ Here Lf measures the distance between the front of the vehicle and its center of
 
 ## Timestep Length and Elapsed Duration (N & dt)
 
-I tried the larger and shorter N and dt values.
+I tried the larger and smaller N and dt values.
 The larger N led to the longer processing time because of increasing the number of variables to be optimized. The larger dt led to unaccurate values because of discretization error.
 
-The smaller horizon caused oversteering and the larger horizon gave countersteering which needs at the high speed. So I worked with smaller dt and larger N and got N=12, dt=0.05 at 80mph
+The smaller prediction horizon caused oversteering and the larger prediction horizon gave countersteering which needs at the high speed. So I worked with smaller dt and larger N and got N=12, dt=0.05 at 80mph
 
 ## Polynomial Fitting and MPC Preprocessing
 
@@ -44,7 +44,7 @@ local_waypoints(1, i) =  sin(-psi) * (ptsx[i] - px) + cos(-psi) * (ptsy[i] - py)
  ```
 And then polynomial fitting of 3rd order is used for the waypoints.
 
-In the simulator, a positive value of delta implies a right turn and a negative value implies a left turn and the values is in between [-1, 1]. I used a negative sign of delta in the model and the value in between [-deg2rad(25), deg2rad(25)]. So I changed it before sending the value back.
+In the simulator, a positive value of delta implies a right turn and a negative value implies a left turn. The values is in between [-1, 1]. I used a negative sign of delta in the model and the value in between [-deg2rad(25), deg2rad(25)]. So I changed it before sending the value back.
 ```
 delta = -pred_vars[0]/deg2rad(25); 
 ```
@@ -60,14 +60,14 @@ double dt_count = ceil(MPC::latency / dt);
 ```
 I constrained the actuations for the latency to be the same as previous actuations.
 ```
-  for (int i = a_start; i < a_start + dt_count; i++) {
-    vars_lowerbound[i] = a_prev;
-    vars_upperbound[i] = a_prev;
-  }
-
   for (int i = delta_start; i < delta_start + dt_count; i++) {
     vars_lowerbound[i] = delta_prev;
     vars_upperbound[i] = delta_prev;
+  }
+
+  for (int i = a_start; i < a_start + dt_count; i++) {
+    vars_lowerbound[i] = a_prev;
+    vars_upperbound[i] = a_prev;
   }
 ```
 and predicted the resulting state after that.
