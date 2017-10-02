@@ -6,10 +6,11 @@
 
 using namespace std;
 
+
 class MPC {
  public:
+  constexpr static double latency = 0.1;
   MPC();
-
   virtual ~MPC();
 
   // Solve the model given an initial state and polynomial coefficients.
@@ -18,3 +19,6 @@ class MPC {
 };
 
 #endif /* MPC_H */
+
+
+ 

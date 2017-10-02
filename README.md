@@ -2,7 +2,81 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## The Model
+This Medel uses six states.
+```
+x: directional position
+y: left position
+psi: counter-clockwise angle from x
+v: longitudinal speed
+cte: positional error between referential x and desired x
+epsi: directional error between referential psi and desired psi(psides)
+```
+These states are changed by steering angle and throttle.
+```
+delta: steering angle
+a: throttle
+```
+So It has following update equations.
+```
+x1 = x0 + v0 * cos(psi0) * dt
+y1 = y0 + v0 * sin(psi0) * dt
+psi1 = psi0 + v0/Lf * delta0 * dt
+v1 = v0 + a0 * dt
+cte1 = (f0 - y0) + v0 * sin(epsi0) * dt 
+epsi1 = (psi0 - psides0) + v0/Lf * delta0 * dt
+```
+Here Lf measures the distance between the front of the vehicle and its center of gravity. This can be chosen from the driving vehicle around in a circle with a constant velocity and steering angle.
 
+## Timestep Length and Elapsed Duration (N & dt)
+
+I tried the larger and shorter N and dt values.
+The larger N led to the longer processing time because of increasing the number of variables to be optimized. The larger dt led to unaccurate values because of discretization error.
+
+The smaller horizon caused oversteering and the larger horizon gave countersteering which needs at the high speed. So I worked with smaller dt and larger N and got N=12, dt=0.05 at 80mph
+
+## Polynomial Fitting and MPC Preprocessing
+
+The model uses the vehicle coordinate system for his states. The coordinates of waypoints in vehicle coordinates(local_waypoints) are obtained by first translating the origin to the current poistion of the vehicle(px, py) and then rotating to vehicle's heading direction(psi). 
+```
+local_waypoints(0, i) =  cos(-psi) * (ptsx[i] - px) - sin(-psi) * (ptsy[i] - py);
+local_waypoints(1, i) =  sin(-psi) * (ptsx[i] - px) + cos(-psi) * (ptsy[i] - py);  
+ ```
+And then polynomial fitting of 3rd order is used for the waypoints.
+
+In the simulator, a positive value of delta implies a right turn and a negative value implies a left turn and the values is in between [-1, 1]. I used a negative sign of delta in the model and the value in between [-deg2rad(25), deg2rad(25)]. So I changed it before sending the value back.
+```
+delta = -pred_vars[0]/deg2rad(25); 
+```
+
+## Model Predictive Control with Latency
+
+In a real car, an actuation command won't execute instantly - there will be a delay as the command propagates through the system. A realistic delay might be on the order of 100 milliseconds like this simulation.
+
+I modeled this latency in the system as following.
+First I calculated iteration count of dt for latency.
+```
+double dt_count = ceil(MPC::latency / dt);
+```
+I constrained the actuations for the latency to be the same as previous actuations.
+```
+  for (int i = a_start; i < a_start + dt_count; i++) {
+    vars_lowerbound[i] = a_prev;
+    vars_upperbound[i] = a_prev;
+  }
+
+  for (int i = delta_start; i < delta_start + dt_count; i++) {
+    vars_lowerbound[i] = delta_prev;
+    vars_upperbound[i] = delta_prev;
+  }
+```
+and predicted the resulting state after that.
+```
+  delta_prev = solution.x[delta_start + dt_count];
+  a_prev = solution.x[a_start + dt_count];
+  result.push_back(delta_prev);
+  result.push_back(a_prev);
+```
 ## Dependencies
 
 * cmake >= 3.5
