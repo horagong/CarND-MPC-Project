@@ -3,7 +3,7 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 ## The Model
-This Model uses six states.
+This model uses six states.
 ```
 x: directional position
 y: left position
@@ -77,6 +77,8 @@ and predicted the resulting state after that.
   result.push_back(delta_prev);
   result.push_back(a_prev);
 ```
+
+---
 ## Dependencies
 
 * cmake >= 3.5
